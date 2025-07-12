@@ -66,98 +66,30 @@ def analyze_sentiment(tweets):
 
 # Create the main interface
 st.sidebar.header("Input Parameters")
-
-cooldown_remaining = get_cooldown_remaining()
-
-# Topic input
-topic = st.sidebar.text_input("Enter topic to analyze", "cricket", disabled=cooldown_remaining > 0)
-
-# Sample tweets input
-st.sidebar.markdown("### Sample Tweets")
-st.sidebar.markdown("Enter some sample tweets to analyze (one per line):")
-
-sample_tweets_text = st.sidebar.text_area(
-    "Sample tweets",
-    value="I love cricket! It's the best sport ever.\nCricket is so boring, I can't watch it.\nThe match was amazing today!\nWhat a terrible game that was.",
-    height=150,
-    disabled=cooldown_remaining > 0
-)
+topic = st.sidebar.text_input("Enter tweet to analyze", "I love cricket! It's the best sport ever.")
 
 # Analyze button
-disabled_btn = cooldown_remaining > 0
-analyze_btn = st.sidebar.button("Analyze Tweets", disabled=disabled_btn)
+analyze_btn = st.sidebar.button("Analyze Tweet")
 
-if cooldown_remaining > 0:
-    mins, secs = divmod(cooldown_remaining, 60)
-    st.sidebar.warning(f"Please wait {mins:02d}:{secs:02d} before trying again.")
-
-if analyze_btn and not disabled_btn:
-    if not topic:
-        st.error("Please enter a topic!")
-    elif not sample_tweets_text.strip():
-        st.error("Please enter some sample tweets!")
+if analyze_btn:
+    if not topic.strip():
+        st.error("Please enter a tweet!")
     else:
-        with st.spinner("Analyzing tweets..."):
-            # Split tweets by newlines and filter empty lines
-            tweets = [tweet.strip() for tweet in sample_tweets_text.split('\n') if tweet.strip()]
-            
-            if tweets:
-                # Analyze sentiment
-                predictions = analyze_sentiment(tweets)
-                
-                if predictions is not None:
-                    # Count positive and negative tweets
-                    positive_count = sum(predictions == 1)
-                    negative_count = sum(predictions == 0)
-                    
-                    # Create a DataFrame for visualization
-                    sentiment_df = pd.DataFrame({
-                        'Sentiment': ['Positive', 'Negative'],
-                        'Count': [positive_count, negative_count]
-                    })
-                    
-                    # Display results
-                    st.subheader(f"Results for '{topic}'")
-                    
-                    # Create bar chart
-                    fig, ax = plt.subplots(figsize=(10, 6))
-                    sentiment_df.plot(kind='bar', x='Sentiment', y='Count', ax=ax, color=['green', 'red'])
-                    plt.title(f"Sentiment Analysis for '{topic}'")
-                    plt.xlabel("Sentiment")
-                    plt.ylabel("Number of Tweets")
-                    plt.xticks(rotation=0)
-                    st.pyplot(fig)
-                    
-                    # Display counts
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        st.metric("Positive Tweets", positive_count)
-                    with col2:
-                        st.metric("Negative Tweets", negative_count)
-                    
-                    # Calculate percentage
-                    total = len(tweets)
-                    positive_percent = (positive_count / total) * 100 if total > 0 else 0
-                    negative_percent = (negative_count / total) * 100 if total > 0 else 0
-                    
-                    st.write(f"**Overall Sentiment:** {positive_percent:.1f}% Positive, {negative_percent:.1f}% Negative")
-                    
-                    # Display analyzed tweets
-                    st.subheader("Analyzed Tweets")
-                    for i, tweet in enumerate(tweets):
-                        sentiment = "Positive" if predictions[i] == 1 else "Negative"
-                        color = "green" if predictions[i] == 1 else "red"
-                        st.markdown(f"**{i+1}.** {tweet} *(Sentiment: :{color}[{sentiment}])*")
-                    
-                    # Set cooldown
-                    st.session_state['cooldown_until'] = time.time() + COOLDOWN_SECONDS
+        with st.spinner("Analyzing tweet..."):
+            tweets = [topic.strip()]
+            predictions = analyze_sentiment(tweets)
+            if predictions is not None:
+                sentiment = "Positive" if predictions[0] == 1 else "Negative"
+                color = "green" if predictions[0] == 1 else "red"
+                st.subheader("Result")
+                st.markdown(f"**Tweet:** {topic.strip()}")
+                st.markdown(f"**Sentiment:** :{color}[{sentiment}]")
 
 # Add instructions in the sidebar
 st.sidebar.markdown("""
 ### Instructions
-1. Enter a topic to analyze
-2. Add some sample tweets (one per line)
-3. Click 'Analyze Tweets' to see results
+1. Enter a tweet to analyze
+2. Click 'Analyze Tweet' to see the result
 
 ### About the Model
 This app uses a machine learning model trained on Twitter data to classify sentiment as positive or negative.
